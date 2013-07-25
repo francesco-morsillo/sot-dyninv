@@ -41,6 +41,7 @@ solver_op_space__INIT solver_op_space_initiator;
 #include <Eigen/QR>
 #include <sot-dyninv/mal-to-eigen.h>
 #include <sys/time.h>
+#include <math.h>
 
 namespace soth
 {
@@ -427,7 +428,7 @@ namespace dynamicgraph
 
 	/* --- */
 	sotDEBUG(1) << "Initial config." << std::endl;
-	double time= 0;
+	//double time= 0; WHY IS IT HERE?
 
 	hsolver->reset();
 	if(relevantActiveSet) 
@@ -444,12 +445,49 @@ namespace dynamicgraph
 	  {
 	    EIGEN_VECTOR_FROM_VECTOR( control,mlcontrol,nbDofs );
 	    control=solution;
+
+	    if(!secondOrderKinematics_)
+	      for(int i=0;i<mlcontrol.size();i++)
+		{
+		  if(isnan(mlcontrol(i))) mlcontrol(i)=0;
+		}
+	    else
+	      {
+		double K = 100.0;
+		bool nanDetect = false;
+		EIGEN_CONST_VECTOR_FROM_SIGNAL(dq,velocitySIN(t));
+		for(int i=0;i<mlcontrol.size();i++) 
+		  if(isnan(mlcontrol(i)))
+		    {
+		      nanDetect = true;
+		    }
+		if(nanDetect) control = -K*dq;
+	      }
+
 	  }
 	else
 	  {
 	    EIGEN_VECTOR_FROM_VECTOR( control,mlcontrol,nbDofs-6 );
 	    control=solution.tail( nbDofs-6 );
+
+	    if(!secondOrderKinematics_)
+	      for(int i=0;i<mlcontrol.size();i++)
+		{
+		  if(isnan(mlcontrol(i))) mlcontrol(i)=0;
+		}
+	    else
+	      {
+		double K = 10.0;
+		bool nanDetect = false;
+		EIGEN_CONST_VECTOR_FROM_SIGNAL(dq,velocitySIN(t));
+		for(int i=0;i<mlcontrol.size();i++) 
+		  if(isnan(mlcontrol(i)))
+		      nanDetect = true;
+		if(nanDetect) control = -K*dq;
+	      }
 	  }
+
+	
 
 	sotDEBUG(1) << "control = " << mlcontrol << std::endl;
 	return mlcontrol;

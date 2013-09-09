@@ -7,7 +7,6 @@ from dynamic_graph.sot.core.meta_task_posture import MetaTaskPosture
 from numpy import matrix, identity, zeros, eye, array, pi, ndarray
 
 
-
 def setGain(gain,val):
     if val!=None:
         if isinstance(val,int) or isinstance(val,float):

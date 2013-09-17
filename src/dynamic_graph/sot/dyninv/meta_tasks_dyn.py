@@ -3,6 +3,8 @@ from dynamic_graph import plug
 from dynamic_graph.sot.core import *
 from dynamic_graph.sot.dyninv import *
 from dynamic_graph.sot.core.matrix_util import matrixToTuple, vectorToTuple, rotate, matrixToRPY, rpy2tr
+from dynamic_graph.sot.core.meta_task_posture import MetaTaskPosture
+
 from numpy import matrix, identity, zeros, eye, array, pi, ndarray
 
 
@@ -18,7 +20,7 @@ def setGain(gain,val):
 def goto6d(task,position,gain=None):
     M=eye(4)
     if isinstance(position,matrix): position = vectorToTuple(position)
-    if( len(position)==3 ): M[0:3,3] = position
+    elif( len(position)==3 ): M[0:3,3] = position
     else:
         #print "Position 6D with rotation ... todo" # done?
         M = array( rpy2tr(*position[3:7]) )
@@ -31,7 +33,7 @@ def goto6d(task,position,gain=None):
 def gotoNd(task,position,selec,gain=None,resetJacobian=True):
     M=eye(4)
     if isinstance(position,matrix): position = vectorToTuple(position)
-    if( len(position)==3 ): M[0:3,3] = position
+    elif( len(position)==3 ): M[0:3,3] = position
     else:
         #print "Position 6D with rotation ... todo" # done?
         M = array( rpy2tr(*position[3:7]) )
@@ -56,64 +58,13 @@ class AddContactHelper:
         self.sot=sot
     def __call__(self,*a): self.sot.addContactFromMetaTask(*a)
 
-
-
-class MetaTaskDynPosture(object):
-    postureRange = { \
-        "rleg": range(6,12), \
-        "lleg": range(12,18), \
-        "chest": range(18,20), \
-        "head": range(20,22), \
-        "rarm": range(22,28), \
-        "rhand": [28], \
-        "larm": range(29,35), \
-        "lhand": [35], \
-            }
-    nbDof = None
+class MetaTaskDynPosture(MetaTaskPosture):
     def __init__(self,dyn,dt,name="posture"):
-        self.dyn=dyn
-        self.name=name
-
-        self.feature    = FeatureGeneric('feature'+name)
-        self.featureDes = FeatureGeneric('featureDes'+name)
+        MetaTaskPosture.__init__(self,dyn,name)
         self.task = TaskDynPD('task'+name)
-        self.gain = GainAdaptive('gain'+name)
-
-        plug(dyn.position,self.feature.errorIN)
-        robotDim = len(dyn.position.value)
-        self.feature.jacobianIN.value = matrixToTuple( identity(robotDim) )
-        self.feature.setReference(self.featureDes.name)
-
-        self.task.add(self.feature.name)
+        self.plugTask()
         plug(dyn.velocity,self.task.qdot)
         self.task.dt.value = dt
-
-        plug(self.task.error,self.gain.error)
-        plug(self.gain.gain,self.task.controlGain)
-
-
-    @property
-    def ref(self):
-        return self.featureDes.errorIN.value
-
-    @ref.setter
-    def ref(self,v):
-        self.featureDes.errorIN.value = v
-
-    def gotoq(self,gain=None,**kwargs):
-        act=list()
-        if MetaTaskDynPosture.nbDof==None:
-            MetaTaskDynPosture.nbDof = len(self.feature.errorIN.value)
-        qdes = zeros((MetaTaskDynPosture.nbDof,1))
-        for n,v in kwargs.items():
-            r = self.postureRange[n]
-            act += r
-            if isinstance(v,matrix): qdes[r,0] = vectorToTuple(v)
-            if isinstance(v,ndarray): qdes[r,0] = vectorToTuple(v)
-            else: qdes[r,0] = v
-        self.ref = vectorToTuple(qdes)
-        self.feature.selec.value = toFlags(act)
-        setGain(self.gain,gain)
 
 
 class MetaTaskDynCom(object):

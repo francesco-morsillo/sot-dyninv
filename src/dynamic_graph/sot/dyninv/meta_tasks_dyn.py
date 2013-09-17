@@ -4,6 +4,7 @@ from dynamic_graph.sot.core import *
 from dynamic_graph.sot.dyninv import *
 from dynamic_graph.sot.core.matrix_util import matrixToTuple, vectorToTuple, rotate, matrixToRPY, rpy2tr
 from dynamic_graph.sot.core.meta_task_posture import MetaTaskPosture
+
 from numpy import matrix, identity, zeros, eye, array, pi, ndarray
 
 

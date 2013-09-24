@@ -249,7 +249,7 @@ namespace dynamicgraph
       void SolverKine::
       resizeSolver( void )
       {
-	hsolver = hcod_ptr_t(new soth::HCOD( nbDofs,stack.size() ));
+	hsolver = hcod_ptr_t(new soth::HCOD( nbDofs,stack.size()-1 ));
 
 	Ctasks.resize(stack.size());
 	btasks.resize(stack.size());
@@ -262,8 +262,12 @@ namespace dynamicgraph
 	    Ctasks[i].resize(nx,nbDofs);
 	    btasks[i].resize(nx);
 
-	    hsolver->pushBackStage( Ctasks[i],btasks[i] );
-	    hsolver->stages.back()->name = task->getName();
+	    if( i<stack.size()-1 || !secondOrderKinematics_ )
+	      {
+		hsolver->pushBackStage( Ctasks[i],btasks[i] );
+		hsolver->stages.back()->name = task->getName();
+	      }
+
 	    i++;
 	  }
 
@@ -306,6 +310,7 @@ namespace dynamicgraph
 #define COLS_F rightCols( nfs )
 
       std::ofstream fout("/tmp/kine2-chrono.dat");
+      std::ofstream fout_posture("/tmp/posture_trace.dat");
 
       ml::Vector& SolverKine::
       controlSOUT_function( ml::Vector &mlcontrol, int t )
@@ -365,10 +370,10 @@ namespace dynamicgraph
 	else
 	  {
 
-	    for( int i=0;i<(int)stack.size();++i )
+	    for( int i=0;i<(int)stack.size();++i )      //last task is always posture and is taken into account out of the solver
 	      {
 		TaskAbstract & taskAb = * stack[i];
-		TaskDynPD & task = dynamic_cast<TaskDynPD &>(taskAb); //it can be static_cast cause of type control
+		TaskDynPD & task = static_cast<TaskDynPD &>(taskAb); //it can be static_cast cause of type control
 		
 		MatrixXd & Ctask = Ctasks[i];
 		VectorBound & btask = btasks[i];
@@ -444,6 +449,42 @@ namespace dynamicgraph
 	gettimeofday(&t2,NULL);
 
 	hsolver->activeSearch(solution);
+
+	if( secondOrderKinematics_ )
+	  {
+	    TaskAbstract & taskAb = * stack[(int)stack.size()-1];
+	    TaskDynPD & task = static_cast<TaskDynPD &>(taskAb); //it can be static_cast cause of type control
+	    
+	    //MatrixXd & identity = Ctasks[(int)stack.size()-1];
+	    VectorBound & q_posture = btasks[(int)stack.size()-1];
+	    Eigen::VectorXd q_pos = VectorXd(q_posture.rows());
+
+	    for(int i=0; i<q_posture.rows(); i++)
+	      {
+		Bound b = q_posture[i];
+		q_pos[i]=b.getValInf();
+	      }
+
+	    int sM = hsolver->stages.back()->getSizeM();
+	    int sL = hsolver->stages.back()->getSizeL();
+	    int sY = sM + sL;
+	    MatrixXd & Y = hsolver->Y.matrixExplicit;
+	    int nY = Y.cols();
+	   
+	    Block<MatrixXd> Z = Y.block(0, sY, nY, nY-sY);
+
+	    //fout_posture << "Task:\n" << task << std::endl;
+	    //fout_posture << "Jacobian (identity):\n" << identity << std::endl;
+	    //fout_posture << "q_posture:\n" << q_posture << std::endl;
+	    //fout_posture << "q_pos:\n" << q_pos << std::endl;
+	    //fout_posture << "Matrix Y:\n" << Y << std::endl;
+	    //fout_posture << "sY: " << sY << std::endl;
+	    //fout_posture << "nY: " << nY << std::endl;
+	    //fout_posture << "Matrix Z: " << Z << std::endl;
+	    
+	    solution = solution + Z*( Z.transpose()*q_pos );
+
+	  }
 
 	gettimeofday(&t3,NULL);
 

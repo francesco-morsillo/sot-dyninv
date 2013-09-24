@@ -473,16 +473,18 @@ namespace dynamicgraph
 	   
 	    Block<MatrixXd> Z = Y.block(0, sY, nY, nY-sY);
 
-	    //fout_posture << "Task:\n" << task << std::endl;
-	    //fout_posture << "Jacobian (identity):\n" << identity << std::endl;
-	    //fout_posture << "q_posture:\n" << q_posture << std::endl;
-	    //fout_posture << "q_pos:\n" << q_pos << std::endl;
-	    //fout_posture << "Matrix Y:\n" << Y << std::endl;
-	    //fout_posture << "sY: " << sY << std::endl;
-	    //fout_posture << "nY: " << nY << std::endl;
-	    //fout_posture << "Matrix Z: " << Z << std::endl;
-	    
+	    fout_posture << "\nTask:\n" << task << std::endl;
+	    fout_posture << "\nsY: " << sY << std::endl;
+	    fout_posture << "\nnY: " << nY << std::endl;
+	    fout_posture << "\nq_posture:\n" << q_posture << std::endl;
+	    fout_posture << "\nq_pos:\n" << q_pos << std::endl;
+	    fout_posture << "\nMatrix Y:\n" << Y << std::endl;
+	    fout_posture << "\nMatrix Z: " << Z << std::endl;
+	    fout_posture << "\nNo posture solution: " << solution << std::endl;
+
 	    solution = solution + Z*( Z.transpose()*q_pos );
+
+	    fout_posture << "\nWith posture solution: " << solution << std::endl << std::endl;
 
 	  }
 

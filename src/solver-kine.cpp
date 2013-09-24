@@ -249,7 +249,10 @@ namespace dynamicgraph
       void SolverKine::
       resizeSolver( void )
       {
-	hsolver = hcod_ptr_t(new soth::HCOD( nbDofs,stack.size()-1 ));
+	if(!secondOrderKinematics_)
+	  hsolver = hcod_ptr_t(new soth::HCOD( nbDofs,stack.size() ));
+	else
+	  hsolver = hcod_ptr_t(new soth::HCOD( nbDofs,stack.size()-1 ));
 
 	Ctasks.resize(stack.size());
 	btasks.resize(stack.size());
@@ -283,7 +286,14 @@ namespace dynamicgraph
 	assert( nbDofs>0 );
 
 	if(! hsolver ) return false;
-	if( stack.size() != hsolver->nbStages() ) return false;
+
+	if(!secondOrderKinematics_)
+	  {
+	    if( stack.size() != hsolver->nbStages() ) return false;
+	  }
+	else
+	  if( stack.size()-1 != hsolver->nbStages() ) return false;
+	    
 
 	bool toBeResized=false;
 	for( int i=0;i<(int)stack.size();++i )
@@ -453,7 +463,7 @@ namespace dynamicgraph
 	if( secondOrderKinematics_ )
 	  {
 	    TaskAbstract & taskAb = * stack[(int)stack.size()-1];
-	    TaskDynPD & task = static_cast<TaskDynPD &>(taskAb); //it can be static_cast cause of type control
+	    TaskDynPD & task = dynamic_cast<TaskDynPD &>(taskAb); //it can be static_cast cause of type control
 	    
 	    //MatrixXd & identity = Ctasks[(int)stack.size()-1];
 	    VectorBound & q_posture = btasks[(int)stack.size()-1];
@@ -476,15 +486,25 @@ namespace dynamicgraph
 	    fout_posture << "\nTask:\n" << task << std::endl;
 	    fout_posture << "\nsY: " << sY << std::endl;
 	    fout_posture << "\nnY: " << nY << std::endl;
-	    fout_posture << "\nq_posture:\n" << q_posture << std::endl;
+	    fout_posture << "\nhsolver\n:" << hsolver << std::endl;
+	    //fout_posture << "\nhsolver->stages\n:" << hsolver->stages << std::endl;
+	    fout_posture << "\nhsolver->nbStages:" << hsolver->nbStages() << std::endl;
+	    for(int i=0;i<stack.size();i++)
+	      {
+		TaskAbstract & pippo = * stack[i];
+		TaskDynPD & pluto = dynamic_cast<TaskDynPD &>(pippo);
+		fout_posture << "\nstack" << i <<"\n:" << pluto << std::endl;
+	      }
+	    fout_posture << "\nstack.size:" << stack.size() << std::endl;
+	    //fout_posture << "\nq_posture:\n" << q_posture << std::endl;
 	    fout_posture << "\nq_pos:\n" << q_pos << std::endl;
-	    fout_posture << "\nMatrix Y:\n" << Y << std::endl;
-	    fout_posture << "\nMatrix Z: " << Z << std::endl;
-	    fout_posture << "\nNo posture solution: " << solution << std::endl;
+	    //fout_posture << "\nMatrix Y:\n" << Y << std::endl;
+	    //fout_posture << "\nMatrix Z:\n" << Z << std::endl;
+	    fout_posture << "\nNo posture solution:\n" << solution << std::endl;
 
 	    solution = solution + Z*( Z.transpose()*q_pos );
 
-	    fout_posture << "\nWith posture solution: " << solution << std::endl << std::endl;
+	    fout_posture << "\nWith posture solution:\n" << solution << std::endl << std::endl;
 
 	  }
 

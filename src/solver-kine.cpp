@@ -383,7 +383,7 @@ namespace dynamicgraph
 	    for( int i=0;i<(int)stack.size();++i )      //last task is always posture and is taken into account out of the solver
 	      {
 		TaskAbstract & taskAb = * stack[i];
-		TaskDynPD & task = static_cast<TaskDynPD &>(taskAb); //it can be static_cast cause of type control
+		TaskDynPD & task = dynamic_cast<TaskDynPD &>(taskAb); //it can be static_cast cause of type control
 		
 		MatrixXd & Ctask = Ctasks[i];
 		VectorBound & btask = btasks[i];
@@ -483,7 +483,7 @@ namespace dynamicgraph
 	   
 	    Block<MatrixXd> Z = Y.block(0, sY, nY, nY-sY);
 
-	    fout_posture << "\nTask:\n" << task << std::endl;
+	    /*fout_posture << "\nTask:\n" << task << std::endl;
 	    fout_posture << "\nsY: " << sY << std::endl;
 	    fout_posture << "\nnY: " << nY << std::endl;
 	    fout_posture << "\nhsolver\n:" << hsolver << std::endl;
@@ -501,10 +501,10 @@ namespace dynamicgraph
 	    //fout_posture << "\nMatrix Y:\n" << Y << std::endl;
 	    //fout_posture << "\nMatrix Z:\n" << Z << std::endl;
 	    fout_posture << "\nNo posture solution:\n" << solution << std::endl;
-
+	    */
 	    solution = solution + Z*( Z.transpose()*q_pos );
 
-	    fout_posture << "\nWith posture solution:\n" << solution << std::endl << std::endl;
+	    //fout_posture << "\nWith posture solution:\n" << solution << std::endl << std::endl;
 
 	  }
 
